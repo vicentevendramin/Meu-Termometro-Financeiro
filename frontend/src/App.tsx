@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
-import type { User, ActiveView, NewTransactionData } from './types';
+import type { User, ActiveView, NewTransactionData, Transaction } from './types';
 import { apiService } from './services/apiService';
 
 // Páginas
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 
+// Layout e Modal
 import AppLayout from './layout/AppLayout';
 import NewTransactionModal from './components/NewTransactionModal';
 
 function App() {
+  // Estado de Autenticação
   const [user, setUser] = useState<User | null>(null);
   const [page, setPage] = useState<'login' | 'register' | 'app'>('login');
   const [isLoading, setIsLoading] = useState(true);
@@ -18,6 +20,9 @@ function App() {
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [keyForRefresh, setKeyForRefresh] = useState(0); // Truque para forçar reload
+  
+  // Estado para guardar a transação que está sendo editada
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   // Verifica o status de autenticação ao carregar
   useEffect(() => {
@@ -62,23 +67,57 @@ function App() {
     setActiveView(view);
   };
 
-  // Handlers do Modal
-  const handleOpenModal = () => setIsModalOpen(true);
-  const handleCloseModal = () => setIsModalOpen(false);
+  const refreshData = () => {
+    setKeyForRefresh((prevKey) => prevKey + 1);
+  };
 
-  // Handler para salvar a transação
-  const handleAddTransaction = async (data: NewTransactionData) => {
+  // Handlers do Modal
+  const handleOpenNewModal = () => {
+    setEditingTransaction(null); // Garante que é um modal de "novo"
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (tx: Transaction) => {
+    setEditingTransaction(tx); // Define a transação para editar
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingTransaction(null); // Limpa o estado de edição ao fechar
+  };
+
+  // Salva (Adicionando ou Editando)
+  const handleSaveTransaction = async (data: NewTransactionData) => {
     try {
-      await apiService.addTransaction(data);
+      if (editingTransaction) {
+        // Modo Edição
+        await apiService.updateTransaction(editingTransaction.id, data);
+      } else {
+        // Modo Novo
+        await apiService.addTransaction(data);
+      }
       handleCloseModal();
-      // Força a atualização do Dashboard ou da página de Transações
-      setKeyForRefresh((prevKey) => prevKey + 1); 
+      refreshData(); // Força a atualização
     } catch (error) {
-      console.error("Falha ao adicionar transação", error);
+      console.error("Falha ao salvar transação", error);
       // Aqui você pode setar um estado de erro no modal
     }
   };
 
+  // Handler para deletar
+  const handleDeleteTransaction = async (id: string) => {
+    // A boa prática seria usar um modal de confirmação
+    // Para o MVP, vamos deletar direto:
+    if (window.confirm("Tem certeza que deseja excluir esta transação?")) {
+      try {
+        await apiService.deleteTransaction(id);
+        refreshData(); // Força a atualização
+      } catch (error) {
+        console.error("Falha ao deletar transação", error);
+      }
+    }
+  };
 
   // --- Renderização ---
   if (isLoading) {
@@ -89,6 +128,7 @@ function App() {
     );
   }
 
+  // Renderiza as páginas de login/registro
   if (page === 'login') {
     return <LoginPage onLogin={handleLogin} onNavigate={handleNavigateAuth} />;
   }
@@ -106,19 +146,22 @@ function App() {
           onLogout={handleLogout}
           activeView={activeView}
           onViewChange={handleViewChange}
-          onOpenModal={handleOpenModal}
+          onOpenModal={handleOpenNewModal}
           contentKey={keyForRefresh}
+          onEditTransaction={handleOpenEditModal}
+          onDeleteTransaction={handleDeleteTransaction}
         />
         <NewTransactionModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
-          onSave={handleAddTransaction}
+          onSave={handleSaveTransaction}
+          transactionToEdit={editingTransaction}
         />
       </>
     );
   }
 
-  // Fallback (se não estiver carregando, não for 'app', mas não tiver usuário)
+  // Fallback
   return <LoginPage onLogin={handleLogin} onNavigate={handleNavigateAuth} />;
 }
 

@@ -37,10 +37,12 @@ const logout = (): Promise<void> => {
 };
 
 // Dados mockados (movidos para fora para que addTransaction possa alterá-los)
-let mockTransactions: Transaction[] = [
+const mockTransactions: Transaction[] = [
   { id: 't1', description: 'Salário', amount: 5000, date: '2025-11-01', type: 'income', category: 'Receitas' },
   { id: 't2', description: 'Aluguel', amount: 1500, date: '2025-11-05', type: 'expense', category: 'Moradia' },
   { id: 't3', description: 'Supermercado', amount: 450, date: '2025-11-07', type: 'expense', category: 'Alimentação' },
+  { id: 't4', description: 'Venda de item', amount: 200, date: '2025-11-08', type: 'income', category: 'Receitas' },
+  { id: 't5', description: 'Cinema', amount: 80, date: '2025-11-09', type: 'expense', category: 'Lazer' },
 ];
 
 export const apiService = {
@@ -107,6 +109,46 @@ export const apiService = {
         // Adiciona no início da lista
         mockTransactions.unshift(newTransaction);
         resolve(newTransaction);
+      }, 500);
+    });
+  },
+
+  /**
+   * Simula a atualização de uma transação.
+   */
+  updateTransaction: (id: string, data: NewTransactionData): Promise<Transaction> => {
+    console.log('SERVICE: updateTransaction()', id, data);
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const index = mockTransactions.findIndex(t => t.id === id);
+        if (index === -1) {
+          return reject(new Error('Transação não encontrada'));
+        }
+        // Atualiza os dados (exceto id e data)
+        const originalTransaction = mockTransactions[index];
+        const updatedTransaction = {
+          ...originalTransaction,
+          ...data, // Sobrescreve com os novos dados
+        };
+        mockTransactions[index] = updatedTransaction;
+        resolve(updatedTransaction);
+      }, 500);
+    });
+  },
+
+  /**
+   * Simula a deleção de uma transação.
+   */
+  deleteTransaction: (id: string): Promise<void> => {
+    console.log('SERVICE: deleteTransaction()', id);
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const index = mockTransactions.findIndex(t => t.id === id);
+        if (index === -1) {
+          return reject(new Error('Transação não encontrada'));
+        }
+        mockTransactions.splice(index, 1); // Remove o item
+        resolve();
       }, 500);
     });
   },

@@ -1,6 +1,7 @@
 import React from 'react';
-import type { User, ActiveView } from '../types';
+import type { User, ActiveView, Transaction } from '../types';
 
+// Componentes
 import Sidebar from '../components/Sidebar';
 import TransactionsPage from '../pages/TransactionsPage';
 import GoalsPage from '../pages/GoalsPage';
@@ -14,6 +15,9 @@ interface AppLayoutProps {
   onViewChange: (view: ActiveView) => void;
   onOpenModal: () => void;
   contentKey: number; // Para forçar o re-render
+  // Props para passar para as páginas
+  onEditTransaction: (tx: Transaction) => void;
+  onDeleteTransaction: (id: string) => void;
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({
@@ -22,22 +26,45 @@ const AppLayout: React.FC<AppLayoutProps> = ({
   activeView,
   onViewChange,
   onOpenModal,
-  contentKey
+  contentKey,
+  onEditTransaction,
+  onDeleteTransaction
 }) => {
 
   // Renderiza a página correta baseada na 'activeView'
   const renderActiveView = () => {
+    // Passamos a 'key' E os handlers para as páginas que listam transações
     switch (activeView) {
       case 'dashboard':
-        return <DashboardPage user={user} key={contentKey} />;
+        return (
+          <DashboardPage
+            user={user}
+            key={contentKey}
+            onEdit={onEditTransaction}
+            onDelete={onDeleteTransaction}
+          />
+        );
       case 'transactions':
-        return <TransactionsPage key={contentKey} />;
+        return (
+          <TransactionsPage
+            key={contentKey}
+            onEdit={onEditTransaction}
+            onDelete={onDeleteTransaction}
+          />
+        );
       case 'goals':
         return <GoalsPage key={contentKey} />;
       case 'reports':
         return <ReportsPage key={contentKey} />;
       default:
-        return <DashboardPage user={user} key={contentKey} />;
+        return (
+          <DashboardPage
+            user={user}
+            key={contentKey}
+            onEdit={onEditTransaction}
+            onDelete={onDeleteTransaction}
+          />
+        );
     }
   };
 

@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import type { User, Transaction } from '../types';
 import { apiService } from '../services/apiService'; 
+import { Pencil, Trash2 } from 'lucide-react'; // Ícones
 
 import CategoryChart from '../components/CategoryChart';
 import GoalsList from '../components/GoalsList';
 
 interface DashboardPageProps {
   user: User;
+  onEdit: (tx: Transaction) => void;
+  onDelete: (id: string) => void;
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ user, onEdit, onDelete }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -81,13 +84,32 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
               // Mostra apenas as 5 transações mais recentes
               transactions.slice(0, 5).map((t) => (
                 <div key={t.id} className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50">
-                  <div>
-                    <p className="font-medium text-gray-900">{t.description}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{t.description}</p>
                     <p className="text-sm text-gray-500">{t.category}</p>
                   </div>
-                  <p className={`font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                    {t.type === 'income' ? '+' : '-'} R$ {t.amount.toFixed(2)}
-                  </p>
+                  <div className="flex-shrink-0 ml-4">
+                    <p className={`font-medium ${t.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                      {t.type === 'income' ? '+' : '-'} R$ {t.amount.toFixed(2)}
+                    </p>
+                  </div>
+                  {/* Botões de Ação */}
+                  <div className="flex-shrink-0 ml-4 space-x-2">
+                    <button
+                      onClick={() => onEdit(t)}
+                      className="text-blue-500 hover:text-blue-700"
+                      title="Editar"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(t.id)}
+                      className="text-red-500 hover:text-red-700"
+                      title="Excluir"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               ))
             )}
