@@ -13,9 +13,13 @@ export interface Transaction {
   category: string;
 }
 
+export type NewTransactionData = Omit<Transaction, 'id' | 'date'>;
+
 export interface Goal {
   id: string;
   name: string;
   currentAmount: number;
   targetAmount: number;
 }
+
+export type ActiveView = 'dashboard' | 'transactions' | 'goals' | 'reports';

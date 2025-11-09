@@ -1,4 +1,4 @@
-import type { User, Transaction } from '../types';
+import type { User, Transaction, NewTransactionData } from '../types';
 
 /**
  * Simula a verificação de um usuário logado (essencial para o app não deslogar ao recarregar)
@@ -35,6 +35,13 @@ const logout = (): Promise<void> => {
     resolve();
   });
 };
+
+// Dados mockados (movidos para fora para que addTransaction possa alterá-los)
+let mockTransactions: Transaction[] = [
+  { id: 't1', description: 'Salário', amount: 5000, date: '2025-11-01', type: 'income', category: 'Receitas' },
+  { id: 't2', description: 'Aluguel', amount: 1500, date: '2025-11-05', type: 'expense', category: 'Moradia' },
+  { id: 't3', description: 'Supermercado', amount: 450, date: '2025-11-07', type: 'expense', category: 'Alimentação' },
+];
 
 export const apiService = {
   /**
@@ -79,12 +86,27 @@ export const apiService = {
     console.log('SERVICE: getTransactions()');
     return new Promise((resolve) => {
       setTimeout(() => {
-        // Dados de exemplo
-        resolve([
-          { id: 't1', description: 'Salário', amount: 5000, date: '2025-11-01', type: 'income', category: 'Receitas' },
-          { id: 't2', description: 'Aluguel', amount: 1500, date: '2025-11-05', type: 'expense', category: 'Moradia' },
-          { id: 't3', description: 'Supermercado', amount: 450, date: '2025-11-07', type: 'expense', category: 'Alimentação' },
-        ]);
+        // Retorna a lista atual de transações
+        resolve([...mockTransactions]); // Retorna uma cópia
+      }, 500);
+    });
+  },
+
+  /**
+   * Simula a adição de uma nova transação.
+   */
+  addTransaction: (data: NewTransactionData): Promise<Transaction> => {
+    console.log('SERVICE: addTransaction()', data);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const newTransaction: Transaction = {
+          ...data,
+          id: `t${Math.floor(Math.random() * 1000)}`, // ID aleatório
+          date: new Date().toISOString().split('T')[0], // Data de hoje
+        };
+        // Adiciona no início da lista
+        mockTransactions.unshift(newTransaction);
+        resolve(newTransaction);
       }, 500);
     });
   },

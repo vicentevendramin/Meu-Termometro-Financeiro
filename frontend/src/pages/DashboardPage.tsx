@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { User, Transaction } from '../types';
-// Importa o serviço
 import { apiService } from '../services/apiService'; 
 
-// Importa os componentes da sidebar
 import CategoryChart from '../components/CategoryChart';
 import GoalsList from '../components/GoalsList';
 
@@ -15,7 +13,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Este useEffect agora vai rodar toda vez que o componente
+  // for remontado (quando a 'key' do App.tsx mudar)
   useEffect(() => {
+    console.log("DashboardPage: Buscando transações...");
     setLoading(true);
     apiService.getTransactions()
       .then(data => {
@@ -23,7 +24,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []); // O array vazio [] faz isso rodar 1 vez
+  }, []); // O array vazio ainda está correto, pois o componente *inteiro* é remontado
 
   const summary = transactions.reduce((acc, tx) => {
     if (tx.type === 'income') {
@@ -37,7 +38,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
 
 
   return (
-    // Layout em Grid do Figma
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       
       {/* Coluna Principal (esquerda) */}
@@ -78,7 +78,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
             ) : transactions.length === 0 ? (
               <p className="text-gray-500">Nenhuma transação encontrada.</p>
             ) : (
-              transactions.map((t) => (
+              // Mostra apenas as 5 transações mais recentes
+              transactions.slice(0, 5).map((t) => (
                 <div key={t.id} className="flex justify-between items-center p-3 rounded-lg hover:bg-gray-50">
                   <div>
                     <p className="font-medium text-gray-900">{t.description}</p>
@@ -103,6 +104,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ user }) => {
 
     </div>
   );
-}
+};
 
 export default DashboardPage;
