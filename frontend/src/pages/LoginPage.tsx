@@ -1,80 +1,93 @@
-import React, { useState } from 'react';
-import type { User, Page } from '../types';
-import { apiService } from '../services/apiService';
+import { useState } from 'react';
+import type { User } from '../types';
+// Importa o serviço
+import { apiService } from '../services/apiService'; 
 
-/**
- * Props para a página de Login
- */
-interface LoginPageProps {
-  onLoginSuccess: (user: User) => void;
-  onNavigate: (page: Page) => void;
+interface LoginProps {
+  onLogin: (user: User) => void;
+  onNavigate: (page: 'register') => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onNavigate }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export default function LoginPage({ onLogin, onNavigate }: LoginProps) {
+  // Valores padrão para facilitar o teste, como no seu apiService
+  const [email, setEmail] = useState('teste@teste.com');
+  const [password, setPassword] = useState('123'); // O mock não valida a senha
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    // Chama o serviço simulado
-    apiService.login(email, password)
-      .then(user => {
-        onLoginSuccess(user);
-      })
-      .catch(err => {
-        setError(err.message);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    setError('');
+    setIsLoading(true);
+    try {
+      // O mock espera (email, password_hash), mas só valida o email
+      const user = await apiService.login(email, password); 
+      onLogin(user); // Chama a função do App.tsx para mudar de página
+    } catch (err: any) {
+      setError(err.message || 'E-mail ou senha inválidos.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="flex-grow flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Entrar</h2>
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+    // Layout centralizado do Tailwind
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 md:p-12 rounded-2xl shadow-xl w-full max-w-md">
+        <h2 className="text-3xl font-bold text-center text-blue-600 mb-8">
+          Login
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Email
+            </label>
             <input
               type="email"
+              id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="seu@email.com"
+              className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Senha</label>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Senha
+            </label>
             <input
               type="password"
+              id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="********"
+              className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-blue-600 transition-colors disabled:bg-gray-400"
-          >
-            {loading ? 'Carregando...' : 'Entrar'}
-          </button>
+          
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+          
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {isLoading ? 'Entrando...' : 'Entrar'}
+            </button>
+          </div>
         </form>
-        <p className="text-center text-gray-600 mt-6">
+        <p className="mt-6 text-center text-sm text-gray-600">
           Não tem uma conta?{' '}
           <button
             onClick={() => onNavigate('register')}
-            className="text-blue-600 font-medium hover:underline"
+            className="font-medium text-blue-600 hover:text-blue-500"
           >
             Cadastre-se
           </button>
@@ -82,6 +95,4 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onNavigate }) => 
       </div>
     </div>
   );
-};
-
-export default LoginPage;
+}

@@ -1,58 +1,29 @@
-import React from 'react';
-import type { User, Page } from '../types';
+import type { User } from '../types';
 
-/**
- * Props para o componente Header
- */
 interface HeaderProps {
-  user: User | null;
+  user: User;
   onLogout: () => void;
-  onNavigate: (page: Page) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ user, onLogout, onNavigate }) => {
+export default function Header({ user, onLogout }: HeaderProps) {
   return (
-    <header className="bg-white shadow-md p-4">
-      <div className="container mx-auto flex justify-between items-center">
-        <div 
-          className="text-2xl font-bold text-blue-600 cursor-pointer"
-          onClick={() => onNavigate(user ? 'dashboard' : 'login')}
-        >
-          🌡️ Meu Termômetro Financeiro
+    <header className="bg-white shadow-md">
+      <nav className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-blue-600">
+            Meu Termômetro Financeiro
+          </h1>
         </div>
-        <nav>
-          {user ? (
-            // Usuário está logado
-            <div className="flex items-center gap-4">
-              <span className="text-gray-700 hidden sm:inline">Olá, {user.email}</span>
-              <button
-                onClick={onLogout}
-                className="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600 transition-colors"
-              >
-                Sair (Logout)
-              </button>
-            </div>
-          ) : (
-            // Usuário está deslogado
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => onNavigate('login')}
-                className="text-blue-600 font-medium hover:underline"
-              >
-                Entrar
-              </button>
-              <button
-                onClick={() => onNavigate('register')}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition-colors"
-              >
-                Criar Conta
-              </button>
-            </div>
-          )}
-        </nav>
-      </div>
+        <div className="flex items-center space-x-4">
+          <span className="text-gray-700">Olá, {user.email}!</span>
+          <button
+            onClick={onLogout}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+          >
+            Sair
+          </button>
+        </div>
+      </nav>
     </header>
   );
-};
-
-export default Header;
+}

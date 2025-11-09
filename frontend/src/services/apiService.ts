@@ -1,5 +1,41 @@
 import type { User, Transaction } from '../types';
 
+/**
+ * Simula a verificação de um usuário logado (essencial para o app não deslogar ao recarregar)
+ */
+const checkAuthStatus = (): Promise<User | null> => {
+  console.log('SERVICE: checkAuthStatus()');
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const token = localStorage.getItem('token');
+      const userEmail = localStorage.getItem('userEmail'); // Precisamos saber quem é o usuário
+
+      if (token && userEmail) {
+        // Se temos o token e o email, simulamos o usuário logado
+        resolve({
+          id: '1', // Na vida real, o ID viria do token
+          email: userEmail,
+        });
+      } else {
+        // Se não, usuário não está logado
+        resolve(null);
+      }
+    }, 300); // Rápida verificação
+  });
+};
+
+/**
+ * Simula o logout, limpando o localStorage
+ */
+const logout = (): Promise<void> => {
+  console.log('SERVICE: logout()');
+  return new Promise((resolve) => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userEmail');
+    resolve();
+  });
+};
+
 export const apiService = {
   /**
    * Simula o login de um usuário.
@@ -10,6 +46,12 @@ export const apiService = {
       setTimeout(() => {
         // Simula uma resposta de sucesso
         if (email === 'teste@teste.com') {
+          // *** LINHAS ADICIONADAS ***
+          // Precisamos salvar o token E o email para o checkAuthStatus funcionar
+          localStorage.setItem('token', 'fake-token-123-xyz');
+          localStorage.setItem('userEmail', email);
+          // **************************
+
           resolve({ id: '1', email: 'teste@teste.com' });
         } else {
           reject(new Error('Usuário ou senha inválidos'));
@@ -46,4 +88,7 @@ export const apiService = {
       }, 500);
     });
   },
+
+  checkAuthStatus,
+  logout,
 };
