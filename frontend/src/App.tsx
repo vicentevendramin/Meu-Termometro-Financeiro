@@ -38,6 +38,7 @@ function App() {
         }
       } catch (error) {
         setPage('login');
+        console.error(error);
       } finally {
         setIsLoading(false);
       }

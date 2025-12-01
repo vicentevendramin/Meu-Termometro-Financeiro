@@ -1,11 +1,8 @@
-import React from 'react';
-import type { Page } from '../types';
-
 interface RegisterPageProps {
-  onNavigate: (page: Page) => void;
+  onNavigate: (targetPage: "login" | "register") => void;
 }
 
-const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
+const RegisterPage = ({ onNavigate }: RegisterPageProps) => {
   // Lógica de registro (similar ao login)
   // Por enquanto, é apenas um placeholder
   

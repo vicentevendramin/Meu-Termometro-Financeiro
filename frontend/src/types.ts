@@ -22,4 +22,4 @@ export interface Goal {
   targetAmount: number;
 }
 
-export type ActiveView = 'dashboard' | 'transactions' | 'goals' | 'reports';
+export type ActiveView = 'dashboard' | 'transactions' | 'goals' | 'reports' | 'login' | 'register';

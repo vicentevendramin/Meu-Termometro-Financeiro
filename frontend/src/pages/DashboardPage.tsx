@@ -12,7 +12,7 @@ interface DashboardPageProps {
   onDelete: (id: string) => void;
 }
 
-const DashboardPage: React.FC<DashboardPageProps> = ({ user, onEdit, onDelete }) => {
+const DashboardPage: React.FC<DashboardPageProps> = ({ onEdit, onDelete }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
