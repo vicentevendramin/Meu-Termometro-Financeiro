@@ -135,7 +135,7 @@ function App() {
   }
 
   if (page === 'register') {
-    return <RegisterPage onNavigate={handleNavigateAuth} />;
+    return <RegisterPage onRegister={handleLogin} onNavigate={handleNavigateAuth} />;
   }
 
   // Renderiza o layout principal da aplicação (se logado)

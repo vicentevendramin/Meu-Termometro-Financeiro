@@ -1,156 +1,145 @@
 import type { User, Transaction, NewTransactionData } from '../types';
 
-/**
- * Simula a verificação de um usuário logado (essencial para o app não deslogar ao recarregar)
- */
-const checkAuthStatus = (): Promise<User | null> => {
-  console.log('SERVICE: checkAuthStatus()');
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const token = localStorage.getItem('token');
-      const userEmail = localStorage.getItem('userEmail'); // Precisamos saber quem é o usuário
+// ─── Configuração base ────────────────────────────────────────────────────────
 
-      if (token && userEmail) {
-        // Se temos o token e o email, simulamos o usuário logado
-        resolve({
-          id: '1', // Na vida real, o ID viria do token
-          email: userEmail,
-        });
-      } else {
-        // Se não, usuário não está logado
-        resolve(null);
-      }
-    }, 300); // Rápida verificação
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+/**
+ * Wrapper sobre fetch que:
+ * - Injeta o Authorization header automaticamente
+ * - Lança um erro legível quando a resposta não for 2xx
+ */
+const apiFetch = async (path: string, options: RequestInit = {}): Promise<Response> => {
+  const token = localStorage.getItem('token');
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, {
+    ...options,
+    headers,
   });
+
+  // Se a resposta não for 2xx, extrai a mensagem de erro do backend e lança
+  if (!response.ok) {
+    // DELETE retorna 204 sem corpo — tratado antes de tentar parsear
+    if (response.status === 204) return response;
+
+    const errorBody = await response.json().catch(() => ({ error: 'Erro desconhecido.' }));
+    throw new Error(errorBody.error || `Erro HTTP ${response.status}`);
+  }
+
+  return response;
 };
 
+// ─── Serviços de autenticação ─────────────────────────────────────────────────
+
 /**
- * Simula o logout, limpando o localStorage
+ * Verifica se há um token válido no localStorage e o valida com o backend.
+ * Substitui o checkAuthStatus do mock.
  */
-const logout = (): Promise<void> => {
-  console.log('SERVICE: logout()');
-  return new Promise((resolve) => {
+const checkAuthStatus = async (): Promise<User | null> => {
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+
+  try {
+    const response = await apiFetch('/auth/me');
+    const data = await response.json();
+    return data.user as User;
+  } catch {
+    // Token expirado ou inválido — limpa o localStorage
     localStorage.removeItem('token');
-    localStorage.removeItem('userEmail');
-    resolve();
-  });
+    return null;
+  }
 };
 
-// Dados mockados (movidos para fora para que addTransaction possa alterá-los)
-const mockTransactions: Transaction[] = [
-  { id: 't1', description: 'Salário', amount: 5000, date: '2025-11-01', type: 'income', category: 'Receitas' },
-  { id: 't2', description: 'Aluguel', amount: 1500, date: '2025-11-05', type: 'expense', category: 'Moradia' },
-  { id: 't3', description: 'Supermercado', amount: 450, date: '2025-11-07', type: 'expense', category: 'Alimentação' },
-  { id: 't4', description: 'Venda de item', amount: 200, date: '2025-11-08', type: 'income', category: 'Receitas' },
-  { id: 't5', description: 'Cinema', amount: 80, date: '2025-11-09', type: 'expense', category: 'Lazer' },
-];
+/**
+ * Remove o token do localStorage (o backend não precisa ser notificado).
+ */
+const logout = async (): Promise<void> => {
+  localStorage.removeItem('token');
+};
+
+// ─── apiService ───────────────────────────────────────────────────────────────
 
 export const apiService = {
   /**
-   * Simula o login de um usuário.
+   * POST /api/auth/login
    */
-  login: (email: string, password_hash: string): Promise<User> => {
-    console.log('SERVICE: login()', { email, password_hash });
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Simula uma resposta de sucesso
-        if (email === 'teste@teste.com') {
-          // *** LINHAS ADICIONADAS ***
-          // Precisamos salvar o token E o email para o checkAuthStatus funcionar
-          localStorage.setItem('token', 'fake-token-123-xyz');
-          localStorage.setItem('userEmail', email);
-          // **************************
-
-          resolve({ id: '1', email: 'teste@teste.com' });
-        } else {
-          reject(new Error('Usuário ou senha inválidos'));
-        }
-      }, 500);
+  login: async (email: string, password: string): Promise<User> => {
+    const response = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
     });
+
+    const data = await response.json();
+
+    // Salva o token para as próximas requisições
+    localStorage.setItem('token', data.token);
+
+    return data.user as User;
   },
 
   /**
-   * Simula o registro de um novo usuário.
+   * POST /api/auth/register
    */
-  register: (email: string, password_hash: string): Promise<User> => {
-    console.log('SERVICE: register()', { email, password_hash });
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ id: '2', email: email });
-      }, 500);
+  register: async (email: string, password: string): Promise<User> => {
+    const response = await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
     });
+
+    const data = await response.json();
+
+    // Loga o usuário automaticamente após o registro
+    localStorage.setItem('token', data.token);
+
+    return data.user as User;
   },
 
   /**
-   * Simula a busca das transações do usuário.
+   * GET /api/transactions
+   * Opcionalmente filtra por mês: getTransactions('2025-11')
    */
-  getTransactions: (): Promise<Transaction[]> => {
-    console.log('SERVICE: getTransactions()');
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Retorna a lista atual de transações
-        resolve([...mockTransactions]); // Retorna uma cópia
-      }, 500);
-    });
+  getTransactions: async (month?: string): Promise<Transaction[]> => {
+    const query = month ? `?month=${month}` : '';
+    const response = await apiFetch(`/transactions${query}`);
+    return response.json() as Promise<Transaction[]>;
   },
 
   /**
-   * Simula a adição de uma nova transação.
+   * POST /api/transactions
    */
-  addTransaction: (data: NewTransactionData): Promise<Transaction> => {
-    console.log('SERVICE: addTransaction()', data);
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newTransaction: Transaction = {
-          ...data,
-          id: `t${Math.floor(Math.random() * 1000)}`, // ID aleatório
-          date: new Date().toISOString().split('T')[0], // Data de hoje
-        };
-        // Adiciona no início da lista
-        mockTransactions.unshift(newTransaction);
-        resolve(newTransaction);
-      }, 500);
+  addTransaction: async (data: NewTransactionData): Promise<Transaction> => {
+    const response = await apiFetch('/transactions', {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
+    return response.json() as Promise<Transaction>;
   },
 
   /**
-   * Simula a atualização de uma transação.
+   * PUT /api/transactions/:id
    */
-  updateTransaction: (id: string, data: NewTransactionData): Promise<Transaction> => {
-    console.log('SERVICE: updateTransaction()', id, data);
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const index = mockTransactions.findIndex(t => t.id === id);
-        if (index === -1) {
-          return reject(new Error('Transação não encontrada'));
-        }
-        // Atualiza os dados (exceto id e data)
-        const originalTransaction = mockTransactions[index];
-        const updatedTransaction = {
-          ...originalTransaction,
-          ...data, // Sobrescreve com os novos dados
-        };
-        mockTransactions[index] = updatedTransaction;
-        resolve(updatedTransaction);
-      }, 500);
+  updateTransaction: async (id: string, data: NewTransactionData): Promise<Transaction> => {
+    const response = await apiFetch(`/transactions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
     });
+    return response.json() as Promise<Transaction>;
   },
 
   /**
-   * Simula a deleção de uma transação.
+   * DELETE /api/transactions/:id
    */
-  deleteTransaction: (id: string): Promise<void> => {
-    console.log('SERVICE: deleteTransaction()', id);
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const index = mockTransactions.findIndex(t => t.id === id);
-        if (index === -1) {
-          return reject(new Error('Transação não encontrada'));
-        }
-        mockTransactions.splice(index, 1); // Remove o item
-        resolve();
-      }, 500);
-    });
+  deleteTransaction: async (id: string): Promise<void> => {
+    await apiFetch(`/transactions/${id}`, { method: 'DELETE' });
   },
 
   checkAuthStatus,
